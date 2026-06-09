@@ -36,6 +36,8 @@
         }
         .analog-clock {
             display: block;
+            width: min(14vw, 200px);
+            height: min(14vw, 200px);
             border-radius: 50%;
             box-shadow: 0 0 18px rgba(0,255,255,0.35), 0 0 40px rgba(138,43,226,0.2);
         }

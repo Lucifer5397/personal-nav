@@ -598,7 +598,7 @@ const ROMAN = ['XII', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X
 function drawAnalogClock() {
     const canvas = document.getElementById('analogClock');
     const ctx = canvas.getContext('2d');
-    const r = canvas.width / 2;
+    const r = (canvas._displaySize || canvas.width) / 2;
     const now = new Date();
     const h = now.getHours() % 12;
     const m = now.getMinutes();
@@ -608,68 +608,74 @@ function drawAnalogClock() {
 
     // 表盘
     ctx.beginPath();
-    ctx.arc(r, r, r - 2, 0, Math.PI * 2);
+    ctx.arc(r, r, r - r*0.02, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(15,12,26,0.85)';
     ctx.fill();
     ctx.strokeStyle = 'rgba(0,255,255,0.5)';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(1, r * 0.016);
     ctx.stroke();
 
     // 外圈装饰环
     ctx.beginPath();
-    ctx.arc(r, r, r - 4, 0, Math.PI * 2);
+    ctx.arc(r, r, r - r*0.04, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(255,215,0,0.25)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(0.5, r * 0.008);
     ctx.stroke();
 
-    // 罗马数字
-    ctx.font = 'bold 12px "Georgia", "Times New Roman", serif';
+    // 罗马数字 - 字号/位置/阴影均按半径比例缩放
+    const fontSize = Math.max(6, r * 0.1);
+    ctx.font = 'bold ' + fontSize + 'px "Georgia", "Times New Roman", serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    const numOffset = r * 0.26;
+    const shadowBlur = Math.max(2, r * 0.035);
     for (let i = 0; i < 12; i++) {
         const angle = (i * 30 - 90) * Math.PI / 180;
-        const x = r + (r - 32) * Math.cos(angle);
-        const y = r + (r - 32) * Math.sin(angle);
+        const x = r + (r - numOffset) * Math.cos(angle);
+        const y = r + (r - numOffset) * Math.sin(angle);
         ctx.fillStyle = '#ffd700';
         ctx.shadowColor = 'rgba(255,215,0,0.5)';
-        ctx.shadowBlur = 4;
+        ctx.shadowBlur = shadowBlur;
         ctx.fillText(ROMAN[i], x, y);
         ctx.shadowBlur = 0;
     }
 
     // 分钟刻度
+    const tickHour = r * 0.11;
+    const tickMin = r * 0.05;
     for (let i = 0; i < 60; i++) {
         const angle = (i * 6 - 90) * Math.PI / 180;
         const isHour = i % 5 === 0;
-        const inner = isHour ? r - 14 : r - 6;
-        const outer = r - 2;
+        const inner = isHour ? r - tickHour : r - tickMin;
+        const outer = r - r*0.02;
         ctx.beginPath();
         ctx.moveTo(r + inner * Math.cos(angle), r + inner * Math.sin(angle));
         ctx.lineTo(r + outer * Math.cos(angle), r + outer * Math.sin(angle));
         ctx.strokeStyle = isHour ? 'rgba(255,215,0,0.7)' : 'rgba(255,255,255,0.2)';
-        ctx.lineWidth = isHour ? 2.5 : 0.6;
+        ctx.lineWidth = Math.max(0.5, isHour ? r * 0.02 : r * 0.005);
         ctx.stroke();
     }
 
     // 时针
     const hAngle = ((h + m / 60) * 30 - 90) * Math.PI / 180;
-    drawHand(ctx, r, hAngle, r * 0.4, 'rgba(255,215,0,0.9)', 3.5);
+    drawHand(ctx, r, hAngle, r * 0.4, 'rgba(255,215,0,0.9)', Math.max(1.5, r * 0.028));
 
     // 分针
     const mAngle = ((m + s / 60) * 6 - 90) * Math.PI / 180;
-    drawHand(ctx, r, mAngle, r * 0.55, 'rgba(0,255,255,0.85)', 2.5);
+    drawHand(ctx, r, mAngle, r * 0.55, 'rgba(0,255,255,0.85)', Math.max(1, r * 0.02));
 
     // 秒针
     const sAngle = (s * 6 - 90) * Math.PI / 180;
-    drawHand(ctx, r, sAngle, r * 0.65, '#ff6b6b', 1);
+    drawHand(ctx, r, sAngle, r * 0.65, '#ff6b6b', Math.max(0.5, r * 0.008));
 
     // 中心点
+    const dotR = Math.max(2, r * 0.032);
     ctx.beginPath();
-    ctx.arc(r, r, 4, 0, Math.PI * 2);
+    ctx.arc(r, r, dotR, 0, Math.PI * 2);
     ctx.fillStyle = '#fff';
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(r, r, 2.5, 0, Math.PI * 2);
+    ctx.arc(r, r, dotR * 0.62, 0, Math.PI * 2);
     ctx.fillStyle = '#0f0c1a';
     ctx.fill();
 }
@@ -684,8 +690,21 @@ function drawHand(ctx, r, angle, length, color, width) {
     ctx.stroke();
 }
 
+function resizeClock() {
+    const canvas = document.getElementById('analogClock');
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas._displaySize = rect.width;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
 function startAnalogClock() {
+    resizeClock();
     drawAnalogClock();
+    window.addEventListener('resize', () => { resizeClock(); drawAnalogClock(); });
     setInterval(drawAnalogClock, 1000);
 }
 
