@@ -299,8 +299,8 @@
 </div>
 
 <header class="hero-section">
-    <h1 class="main-title">个人导航中心</h1>
-    <p class="subtitle">通往数字世界的门户</p>
+    <h1 class="main-title" id="heroTitle">个人导航中心</h1>
+    <p class="subtitle" id="heroSubtitle">通往数字世界的门户</p>
     <div class="search-container">
         <span class="search-icon">🔍</span>
         <input type="text" class="search-input" id="searchInput" placeholder="搜索书签...">
@@ -358,6 +358,7 @@
         </div>
         <div class="settings-tabs">
             <button class="tab-btn active" data-tab="categories">分类管理</button>
+            <button class="tab-btn" data-tab="personalize">个性设置</button>
         </div>
         <div class="tab-content active" id="categoriesTab">
             <h3 style="color:var(--accent-cyan);margin-bottom:1rem;">分类列表</h3>
@@ -376,6 +377,19 @@
                     <button class="btn-primary" id="confirmAddCatBtn" style="padding:0.5rem 1.2rem;">确定</button>
                 </div>
             </div>
+        </div>
+        <div class="tab-content" id="personalizeTab">
+            <h3 style="color:var(--accent-cyan);margin-bottom:1rem;">个性设置</h3>
+            <div class="form-group">
+                <label>主标题</label>
+                <input type="text" id="settingTitle" maxlength="30" placeholder="个人导航中心">
+            </div>
+            <div class="form-group">
+                <label>副标题</label>
+                <input type="text" id="settingSubtitle" maxlength="50" placeholder="通往数字世界的门户">
+            </div>
+            <button class="btn-primary" id="savePersonalizeBtn">保存</button>
+            <span id="personalizeSaved" style="display:none;margin-left:0.8rem;color:#4ade80;font-size:0.9rem;">✓ 已保存</span>
         </div>
     </div>
 </div>
@@ -399,6 +413,8 @@ let bookmarks = [];
 let categories = {};
 let currentFilter = 'all';
 let currentSearch = '';
+const DEFAULT_TITLE = '个人导航中心';
+const DEFAULT_SUBTITLE = '通往数字世界的门户';
 
 // ==================== 加载数据 ====================
 async function loadBookmarks() {
@@ -631,6 +647,40 @@ async function deleteCategory(key) {
     await loadBookmarks();
 }
 
+// ==================== 个性设置 ====================
+function loadSiteConfig() {
+    const title = localStorage.getItem('siteTitle') || DEFAULT_TITLE;
+    const subtitle = localStorage.getItem('siteSubtitle') || DEFAULT_SUBTITLE;
+    document.getElementById('heroTitle').textContent = title;
+    document.getElementById('heroSubtitle').textContent = subtitle;
+}
+
+function savePersonalize() {
+    const title = document.getElementById('settingTitle').value.trim() || DEFAULT_TITLE;
+    const subtitle = document.getElementById('settingSubtitle').value.trim() || DEFAULT_SUBTITLE;
+    localStorage.setItem('siteTitle', title);
+    localStorage.setItem('siteSubtitle', subtitle);
+    document.getElementById('heroTitle').textContent = title;
+    document.getElementById('heroSubtitle').textContent = subtitle;
+    document.getElementById('personalizeSaved').style.display = 'inline';
+    setTimeout(() => {
+        document.getElementById('personalizeSaved').style.display = 'none';
+    }, 2000);
+}
+
+function initPersonalizeTab() {
+    document.getElementById('settingTitle').value = localStorage.getItem('siteTitle') || DEFAULT_TITLE;
+    document.getElementById('settingSubtitle').value = localStorage.getItem('siteSubtitle') || DEFAULT_SUBTITLE;
+    document.getElementById('personalizeSaved').style.display = 'none';
+}
+
+document.getElementById('savePersonalizeBtn').addEventListener('click', savePersonalize);
+['settingTitle', 'settingSubtitle'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') savePersonalize();
+    });
+});
+
 // ==================== 背景动画 ====================
 function initBackground() {
     const canvas = document.getElementById('bgCanvas');
@@ -696,6 +746,7 @@ function updateClock() {
 // ==================== 初始化 ====================
 async function init() {
     document.body.classList.add('page-loaded');
+    loadSiteConfig();
     initBackground();
     updateClock();
     setInterval(updateClock, 1000);
@@ -721,6 +772,7 @@ async function init() {
     // 设置模态框
     document.getElementById('settingsBtn').addEventListener('click', () => {
         renderSettingsCatList();
+        initPersonalizeTab();
         document.getElementById('settingsModal').classList.add('show');
     });
     document.getElementById('closeSettings').addEventListener('click', () => {
