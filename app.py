@@ -27,9 +27,12 @@ def get_db():
 @app.route('/api/bookmarks', methods=['GET'])
 def list_bookmarks():
     category = request.args.get('category', '')
+    favorite = request.args.get('favorite', '')
     conn = get_db()
     cursor = conn.cursor(dictionary=True)
-    if category and category != 'all':
+    if favorite == '1':
+        cursor.execute('SELECT * FROM bookmarks WHERE is_favorited = 1 ORDER BY sort_order, id DESC')
+    elif category and category != 'all':
         cursor.execute(
             'SELECT * FROM bookmarks WHERE category = %s ORDER BY sort_order, id DESC',
             (category,)
@@ -124,6 +127,22 @@ def delete_bookmark(bid):
     if affected == 0:
         return jsonify({'error': 'Not found'}), 404
     return jsonify({'message': 'deleted'})
+
+
+# ==================== 收藏 ====================
+
+@app.route('/api/bookmarks/<int:bid>/favorite', methods=['PUT'])
+def toggle_favorite(bid):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('UPDATE bookmarks SET is_favorited = NOT is_favorited WHERE id = %s', (bid,))
+    conn.commit()
+    cursor.execute('SELECT is_favorited FROM bookmarks WHERE id = %s', (bid,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify({'is_favorited': bool(row[0])})
 
 
 # ==================== 分类 CRUD ====================
